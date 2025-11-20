@@ -1,4 +1,9 @@
 
+# télécharger avant le lancer du script les fichiers :
+
+# wget -O /tmp/dolibarr.zip https://github.com/Dolibarr/dolibarr/archive/refs/tags/17.0.0.zip
+# wget -O /tmp/glpi.tgz https://github.com/glpi-project/glpi/releases/download/10.0.15/glpi-10.0.15.tgz
+
 
 # Arrêt si erreur
 set -e
