@@ -216,12 +216,33 @@ chmod 644 ${CERT_DIR}/*.crt
 mkdir -p ${CERT_DIR}/clients
 cp ${CERT_DIR}/ca.crt ${CERT_DIR}/clients/ca-a-importer.crt
 
-# Génération certificat client (cours 540)
+# Génération certificat client avec Extended Key Usage
+cat > ${CERT_DIR}/client.cnf <<EOF
+[req]
+default_bits = 2048
+prompt = no
+default_md = sha256
+distinguished_name = dn
+req_extensions = req_ext
+
+[dn]
+C = FR
+ST = IDF
+L = Paris
+O = MonEntreprise
+CN = Client
+
+[req_ext]
+extendedKeyUsage = clientAuth
+keyUsage = digitalSignature, keyEncipherment
+EOF
+
 openssl genrsa -out ${CERT_DIR}/client.key 2048
 openssl req -new -key ${CERT_DIR}/client.key -out ${CERT_DIR}/client.csr \
-    -subj "/C=FR/ST=IDF/L=Paris/O=MonEntreprise/CN=Client"
+    -config ${CERT_DIR}/client.cnf
 openssl x509 -req -CA ${CERT_DIR}/ca.crt -CAkey ${CERT_DIR}/ca.key \
-    -in ${CERT_DIR}/client.csr -out ${CERT_DIR}/client.crt -days 120
+    -CAcreateserial -in ${CERT_DIR}/client.csr -out ${CERT_DIR}/client.crt \
+    -days 120 -sha256 -extfile ${CERT_DIR}/client.cnf -extensions req_ext
 openssl pkcs12 -export -in ${CERT_DIR}/client.crt -inkey ${CERT_DIR}/client.key \
     -out ${CERT_DIR}/clients/client.p12 -password pass:client123
 
@@ -242,6 +263,8 @@ cat > /etc/apache2/sites-available/dolibarr.conf <<EOF
     SSLCertificateKeyFile ${CERT_DIR}/${DOLI_DOMAIN}.key
     SSLCACertificateFile ${CERT_DIR}/ca.crt
     SSLProtocol -all +TLSv1.3 +TLSv1.2
+    SSLCipherSuite TLS_AES_256_GCM_SHA384:TLS_AES_128_GCM_SHA256:TLS_CHACHA20_POLY1305_SHA256
+    SSLHonorCipherOrder on
 
     <Directory ${WEB_DIR}/dolibarr/htdocs>
         AllowOverride All
@@ -266,6 +289,8 @@ cat > /etc/apache2/sites-available/glpi.conf <<EOF
     SSLCertificateKeyFile ${CERT_DIR}/${GLPI_DOMAIN}.key
     SSLCACertificateFile ${CERT_DIR}/ca.crt
     SSLProtocol -all +TLSv1.3 +TLSv1.2
+    SSLCipherSuite TLS_AES_256_GCM_SHA384:TLS_AES_128_GCM_SHA256:TLS_CHACHA20_POLY1305_SHA256
+    SSLHonorCipherOrder on
 
     <Directory ${WEB_DIR}/glpi>
         AllowOverride All
